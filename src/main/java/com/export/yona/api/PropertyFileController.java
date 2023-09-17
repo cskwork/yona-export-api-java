@@ -32,10 +32,7 @@ public class PropertyFileController {
             throw new RuntimeException(e);
         }
         String projectNameList = properties.getProperty("yona-project-name");
-
         List<String> projectNames = Arrays.asList(projectNameList.split("\\s*,\\s*"));
-
-
 
         model.addAttribute("projectNames", projectNames);
         return "index";
