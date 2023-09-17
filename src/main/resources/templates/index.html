@@ -1,18 +1,32 @@
 <!DOCTYPE HTML>
 <html xmlns:th="https://www.thymeleaf.org">
 <head>
-    <title>검색 결과</title>
+    <title>설정 변경</title>
 </head>
+<style type="text/css">
+    p {
+        word-break: break-all;
+        white-space: normal;
+    }
+
+</style>
+
 <body>
-<h1>검색 결과</h1>
-<p>전체 카운트 :
-<table>
-    <thead>
-    <tr>
-        <th>Column 1</th>
-        <th>Column 2</th>
-    </tr>
-    </thead>
+<h1>등록된 프로젝트 현황</h1>
+
+
+<ul>
+    <li th:each="name : ${projectNames}" th:text="${name}"></li>
+</ul>
+
+
+
+<h1>프로젝트 추가</h1>
+<form th:action="@{/addPrjNameConfig}" method="post">
+    <label>프로젝트명: <input placeholder="d-platform-wm"  type="text" name="projectName"></label><br>
+    <button type="submit">추가</button>
+</form>
+
 
 </body>
 </html>
