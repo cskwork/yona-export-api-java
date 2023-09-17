@@ -24,14 +24,9 @@ import java.util.Date;
 @Slf4j
 @Controller
 public class ApiController {
-
     @GetMapping("/")
     public String homepage(Model model, @RequestParam(required = false, defaultValue = "test") String username) {
-        // end::homePageMethodDescription[]
-        // tag::modelAttributes[]
-
-        // end::modelAttributes[]
-        return "index";
+        return "redirect:/prjNameConfig";
     }
 
     /**
