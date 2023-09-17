@@ -22,7 +22,7 @@ import java.util.Properties;
 import java.util.Date;
 
 @Slf4j
-@RestController
+@Controller
 public class ApiController {
 
     @GetMapping("/")
@@ -31,7 +31,7 @@ public class ApiController {
         // tag::modelAttributes[]
 
         // end::modelAttributes[]
-        return "index.html";
+        return "index";
     }
 
     /**
@@ -44,15 +44,6 @@ public class ApiController {
         InputStream input = ApiController.class.getResourceAsStream("/application.properties");
         properties.load(input);
 
-        // Update the value for a specific key
-        properties.setProperty("yona-project-name", "new_value_here");
-
-        // Save the updated properties back to the file
-        try (OutputStream output = Files.newOutputStream(Paths.get("src/main/resources/application.properties"))) {
-            properties.store(output, null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         String apiUrl = properties.getProperty("yona-api-url");
         String projectNameList = properties.getProperty("yona-project-name");
         String adminId = properties.getProperty("yona-admin-id");
