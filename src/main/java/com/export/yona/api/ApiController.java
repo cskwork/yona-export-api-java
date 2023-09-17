@@ -1,24 +1,58 @@
-package com.export.yona;
+package com.export.yona.api;
 
+import com.export.yona.domain.YonaApiModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.Date;
 
 @Slf4j
+@RestController
 public class ApiController {
-    public static void main(String[] args) throws IOException, SQLException {
+
+    @GetMapping("/")
+    public String homepage(Model model, @RequestParam(required = false, defaultValue = "test") String username) {
+        // end::homePageMethodDescription[]
+        // tag::modelAttributes[]
+
+        // end::modelAttributes[]
+        return "index.html";
+    }
+
+    /**
+     * @throws IOException
+     * @throws SQLException
+     */
+    @GetMapping("/updateBatchData")
+    public void updateBatchData() throws IOException, SQLException {
         Properties properties = new Properties();
         InputStream input = ApiController.class.getResourceAsStream("/application.properties");
         properties.load(input);
 
+        // Update the value for a specific key
+        properties.setProperty("yona-project-name", "new_value_here");
+
+        // Save the updated properties back to the file
+        try (OutputStream output = Files.newOutputStream(Paths.get("src/main/resources/application.properties"))) {
+            properties.store(output, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         String apiUrl = properties.getProperty("yona-api-url");
         String projectNameList = properties.getProperty("yona-project-name");
         String adminId = properties.getProperty("yona-admin-id");
@@ -26,6 +60,7 @@ public class ApiController {
         String destinationDBUrl =  properties.getProperty("destination-db-url");
         String destinationDBId =  properties.getProperty("destination-db-id");
         String destinationDBPwd =  properties.getProperty("destination-db-pwd");
+
         int batchSize = 500; // INSERT 문 연결 1회에 실행하는 row 단위
 
         if (projectNameList != null) {
@@ -59,6 +94,7 @@ public class ApiController {
 
                         String json = response.toString();
                         ObjectMapper mapper = new ObjectMapper();
+
                         YonaApiModel project = mapper.readValue(json, YonaApiModel.class);
 
                         log.info("ISSUES :"+ project.issues.get(0).toString());
@@ -66,7 +102,7 @@ public class ApiController {
                         try (Connection connDB = DriverManager.getConnection(destinationDBUrl, destinationDBId, destinationDBPwd)) {
                             connDB.setAutoCommit(false);
 
-                            String sql = "INSERT INTO yona (owner, projectName, projectDescription) VALUES (?, ?, ?)";
+                            String sql = "INSERT INTO yona (owner, projectName, projectDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                             PreparedStatement stmt = connDB.prepareStatement(sql);
 
                             int batchCount = 0;
@@ -75,6 +111,12 @@ public class ApiController {
                                 stmt.setString(1, issue.getOwner());
                                 stmt.setString(2, issue.getProjectName());
                                 stmt.setString(3, issue.getTitle());
+                                stmt.setString(4, issue.getBody());
+                                stmt.setString(5, issue.getCreatedAt());
+                                stmt.setString(6, issue.getUpdatedAt());
+                                stmt.setString(7, issue.getType());
+                                stmt.setString(8, issue.getState());
+                                stmt.setString(9, issue.getRefUrl());
                                 stmt.addBatch();
                                 // Execute the batch when it reaches the specified size or at the end of the data
                                 if ((i + 1) % batchSize == 0 || i == project.issues.size() - 1) {
