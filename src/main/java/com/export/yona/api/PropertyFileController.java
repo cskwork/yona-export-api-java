@@ -1,49 +1,52 @@
 package com.export.yona.api;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cglib.core.internal.LoadingCache;
 import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+@Slf4j
+@Controller
 public class PropertyFileController {
-    static File file;
+    @GetMapping("/prjNameConfig")
+    public String prjNameConfig(){
+        Properties properties = new Properties();
+        InputStream input = ApiController.class.getResourceAsStream("/application.properties");
+        try {
+            properties.load(input);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String projectNameList = properties.getProperty("yona-project-name");
 
-    public static void main(String... args)throws IOException
-    {
-        file = new File("application.properties");
-        Properties table = new Properties();
-        table.setProperty("Shivam","Bane");
-        table.setProperty("CS","Maverick");
-        System.out.println("Properties has been set in HashTable: " + table);
-        // saving the properties in file
-        saveProperties(table);
-        // changing the property
-        table.setProperty("Shivam", "Swagger");
-        System.out.println("After the change in HashTable: " + table);
-        // saving the properties in file
-        saveProperties(table);
-        // loading the saved properties
-        loadProperties(table);
+        return projectNameList;
     }
 
-    static void saveProperties(Properties p) throws IOException
-    {
-        try (FileOutputStream fr = new FileOutputStream(file)) {
-            p.store(fr, "Properties");
-            fr.close();
+    @GetMapping("/updatePrjNameConfig")
+    public String updateYonaProjectNameList(@RequestParam String projectNames){
+        Properties properties = new Properties();
+        InputStream input = ApiController.class.getResourceAsStream("/application.properties");
+        try {
+            properties.load(input);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        System.out.println("After saving properties: " + p);
-    }
 
-    static void loadProperties(Properties p)throws IOException
-    {
-        try (FileInputStream fi = new FileInputStream(file)) {
-            p.load(fi);
-            fi.close();
+        if(!projectNames.isEmpty()){
+            properties.setProperty("yona-project-name", projectNames);
+            try (OutputStream output = Files.newOutputStream(Paths.get("src/main/resources/application.properties"))) {
+                properties.store(output, null);
+            } catch (IOException e) {
+                log.error("Failed to set properties");
+            }
         }
-        System.out.println("After Loading properties: " + p);
+        return "SUCCESS";
     }
 }
