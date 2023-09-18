@@ -24,6 +24,7 @@ import java.util.Date;
 @Slf4j
 @Controller
 public class ApiController {
+    static Properties properties = new Properties();
     @GetMapping("/")
     public String homepage(Model model, @RequestParam(required = false, defaultValue = "test") String username) {
         return "redirect:/prjNameConfig";
@@ -34,18 +35,17 @@ public class ApiController {
      * @throws SQLException
      */
     @GetMapping("/updateBatchData")
-    public void updateBatchData() throws IOException, SQLException {
-        Properties properties = new Properties();
+    public String updateBatchData() throws IOException, SQLException {
+
         InputStream input = ApiController.class.getResourceAsStream("/application.properties");
         properties.load(input);
-
-        String apiUrl = properties.getProperty("yona-api-url");
         String projectNameList = properties.getProperty("yona-project-name");
-        String adminId = properties.getProperty("yona-admin-id");
-        String userToken = properties.getProperty("yona-admin-userToken");
         String destinationDBUrl =  properties.getProperty("destination-db-url");
         String destinationDBId =  properties.getProperty("destination-db-id");
         String destinationDBPwd =  properties.getProperty("destination-db-pwd");
+        String apiUrl = properties.getProperty("yona-api-url");
+        String adminId = properties.getProperty("yona-admin-id");
+        String userToken = properties.getProperty("yona-admin-userToken");
 
         int batchSize = 500; // INSERT 문 연결 1회에 실행하는 row 단위
 
@@ -85,10 +85,17 @@ public class ApiController {
 
                         log.info("ISSUES :"+ project.issues.get(0).toString());
 
+
+                        // DELETE
+                        deleteAllYonaData(properties);
+
+                        // INSERT
                         try (Connection connDB = DriverManager.getConnection(destinationDBUrl, destinationDBId, destinationDBPwd)) {
                             connDB.setAutoCommit(false);
 
-                            String sql = "INSERT INTO yona (owner, projectName, projectDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                            String sql = "INSERT INTO yona_issue_posts " +
+                                    "(OWNER, PROJECT_NAME, TITLE, BODY, REG_DATE, MOD_DATE, TYPE, STATE, REF_URL, ARTICLE_ID_YONA, AUTHOR_NAME  ) " +
+                                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                             PreparedStatement stmt = connDB.prepareStatement(sql);
 
                             int batchCount = 0;
@@ -98,16 +105,18 @@ public class ApiController {
                                 stmt.setString(2, issue.getProjectName());
                                 stmt.setString(3, issue.getTitle());
                                 stmt.setString(4, issue.getBody());
-                                stmt.setString(5, issue.getCreatedAt());
-                                stmt.setString(6, issue.getUpdatedAt());
-                                stmt.setString(7, issue.getType());
+                                stmt.setTimestamp(5, issue.getCreatedAt());
+                                stmt.setTimestamp(6, issue.getUpdatedAt());
+                                stmt.setString(7,"YONA_"+issue.getType());
                                 stmt.setString(8, issue.getState());
                                 stmt.setString(9, issue.getRefUrl());
+                                stmt.setInt(10, issue.getNumber());
+                                stmt.setString(11, issue.getAuthor().getName());
                                 stmt.addBatch();
                                 // Execute the batch when it reaches the specified size or at the end of the data
                                 if ((i + 1) % batchSize == 0 || i == project.issues.size() - 1) {
                                     batchCount+=1;
-                                    log.info("Batch Iteration :" + batchCount);
+                                    log.info("INSERT Batch Iteration :" + batchCount);
                                     int[] batchResults = stmt.executeBatch();
                                     // Commit the transaction if all rows were inserted successfully
                                     connDB.commit();
@@ -135,13 +144,26 @@ public class ApiController {
                     log.error("Error creating HTTP connection");
                     throw new RuntimeException("Error creating HTTP connection", e);
                 }
-
-
-
             }
         } else {
             log.info("No project names found.");
         }
+        log.info("INSERT SUCCESS");
+        return "index";
+    }
+    public static void deleteAllYonaData(Properties properties){
+        String destinationDBUrl =  properties.getProperty("destination-db-url");
+        String destinationDBId =  properties.getProperty("destination-db-id");
+        String destinationDBPwd =  properties.getProperty("destination-db-pwd");
+        try (Connection connDB = DriverManager.getConnection(destinationDBUrl, destinationDBId, destinationDBPwd)) {
+            String sql = "DELETE FROM yona_issue_posts where type='YONA_ISSUE_POST'";
+            PreparedStatement stmt = connDB.prepareStatement(sql);
+            stmt.executeUpdate();
+            log.info("DELETE AllYonaData SUCCESS");
+        }catch (Exception e){
+            log.info("ERROR WHILE DELETE");
+        }
+
 
     }
 }
