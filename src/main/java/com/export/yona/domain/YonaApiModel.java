@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -29,6 +32,8 @@ public class YonaApiModel {
     public List<Post> posts;
     public List<Label> labels;
 
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown=true)
     public static class Label{
 
     }
@@ -61,14 +66,25 @@ public class YonaApiModel {
         public String title;
         public String body;
         public String owner;
-        public String createdAt;
-        public String updatedAt;
+        public Timestamp createdAt;
+        public Timestamp updatedAt;
 
         public String type;
         public String state;
         public String refUrl;
+        public String name;
+        private Author author;
         List<User> assignees;
+
     }
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    public static class Author {
+        private String loginId;
+        private String name;
+        private String email;
+    }
+
     @Data
     @JsonIgnoreProperties(ignoreUnknown=true)
     public static class Milestone {
