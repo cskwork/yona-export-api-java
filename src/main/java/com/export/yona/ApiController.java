@@ -22,7 +22,7 @@ public class ApiController {
         String apiUrl = properties.getProperty("yona-api-url");
         String projectNameList = properties.getProperty("yona-project-name");
         String adminId = properties.getProperty("yona-admin-id");
-        String userToken = properties.getProperty("yona-admin-userToken");
+        String userToken = RequiredSecret.read(System.getenv("YONA_ADMIN_API_TOKEN"), "YONA_ADMIN_API_TOKEN");
         String destinationDBUrl =  properties.getProperty("destination-db-url");
         String destinationDBId =  properties.getProperty("destination-db-id");
         String destinationDBPwd =  properties.getProperty("destination-db-pwd");
@@ -36,7 +36,7 @@ public class ApiController {
                 String urlStr = apiUrl + "/-_-api/v1/owners/" + adminId + "/projects/" + projectName.trim() + "/exports";
 
                 log.info(urlStr);
-                log.info("{} ,{}, {}", destinationDBUrl, destinationDBId , destinationDBPwd);
+
 
                 try {
                     URL url = new URL(urlStr);
@@ -61,7 +61,7 @@ public class ApiController {
                         ObjectMapper mapper = new ObjectMapper();
                         YonaApiModel project = mapper.readValue(json, YonaApiModel.class);
 
-                        log.info("ISSUES :"+ project.issues.get(0).toString());
+                        log.info("Received {} issues", project.issues.size());
 
                         try (Connection connDB = DriverManager.getConnection(destinationDBUrl, destinationDBId, destinationDBPwd)) {
                             connDB.setAutoCommit(false);
